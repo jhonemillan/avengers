@@ -17,8 +17,8 @@ import {
   DownloadFileRequest,
 } from 'groupdocs-conversion-cloud';
 
-const appSid = '013fd152-82ca-476c-9d2a-2e9f45d6bb6b';
-const appKey = '27462d3eaa735059f70a12da838fbaf5';
+const appSid = '';
+const appKey = '';
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
 const S3 = new AWS.S3();
