@@ -27,6 +27,7 @@
     "@vendia/serverless-express": "^4.10.1",
     "aws-lambda": "^1.0.7",
     "aws-sdk": "^2.1208.0",
+    "groupdocs-conversion-cloud": "^22.3.0",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",

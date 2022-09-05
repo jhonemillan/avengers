@@ -7,10 +7,25 @@ import {
 import * as AWS from 'aws-sdk';
 import { v4 as uuid } from 'uuid';
 import * as XLSX from 'xlsx';
-import * as fs from 'fs';
+import {
+  FileApi,
+  Configuration,
+  UploadFileRequest,
+  ConvertSettings,
+  ConvertDocumentRequest,
+  ConvertApi,
+  DownloadFileRequest,
+} from 'groupdocs-conversion-cloud';
+
+const appSid = '013fd152-82ca-476c-9d2a-2e9f45d6bb6b';
+const appKey = '27462d3eaa735059f70a12da838fbaf5';
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
 const S3 = new AWS.S3();
+
+const config = new Configuration(appSid, appKey);
+config.apiBaseUrl = 'https://api.groupdocs.cloud';
+const fileApi = FileApi.fromConfig(config);
 
 @Injectable()
 export class AvengerService {
@@ -121,7 +136,29 @@ export class AvengerService {
     return data.Items;
   }
 
-  async getExcelReport(): Promise<StreamableFile> {
+  async getPDFReport(): Promise<Buffer> {
+    try {
+      const settings = new ConvertSettings();
+      settings.filePath = 'avengers.xlsx';
+      settings.format = 'pdf';
+      settings.outputPath = 'converted';
+
+      const request = new ConvertDocumentRequest(settings);
+      const downloadRequest = new DownloadFileRequest('converted/avengers.pdf');
+      const convertApi = ConvertApi.fromConfig(config);
+
+      await convertApi.convertDocument(request);
+
+      // download file
+      const pdfFile = await fileApi.downloadFile(downloadRequest);
+      console.log(pdfFile);
+      return pdfFile;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async getExcelReport(): Promise<Buffer> {
     let data;
     let stream;
     try {
@@ -142,6 +179,8 @@ export class AvengerService {
         type: 'buffer',
       });
 
+      stream = outBuffer;
+
       // upload to S3
       await S3.putObject({
         Bucket: 'reportsavengers',
@@ -152,15 +191,13 @@ export class AvengerService {
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       }).promise();
 
-      stream = await S3.getObject({
-        Bucket: 'reportsavengers',
-        Key: 'avengers.xlsx',
-      }).createReadStream();
+      const request = new UploadFileRequest('avengers.xlsx', outBuffer, '');
+      // upload file
+      await fileApi.uploadFile(request);
     } catch (error) {
       console.log(error);
       throw new InternalServerErrorException(error);
     }
-
-    return new StreamableFile(stream);
+    return stream;
   }
 }
